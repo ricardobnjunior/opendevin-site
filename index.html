@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenDevin — Autonomous Code Pipeline</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0a0a1a;
+            color: #e0e0e0;
+            line-height: 1.7;
+        }
+        .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+
+        h1 {
+            font-size: 2.2rem;
+            color: #e94560;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        .subtitle {
+            color: #888;
+            font-size: 1.1rem;
+            margin-bottom: 48px;
+        }
+        h2 {
+            font-size: 1.5rem;
+            color: #fff;
+            margin-top: 56px;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e94560;
+        }
+        h3 {
+            font-size: 1.15rem;
+            color: #e94560;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+        p { margin-bottom: 16px; color: #ccc; }
+
+        .mermaid-wrapper {
+            background: #0f0f1f;
+            border: 1px solid #1a1a3e;
+            border-radius: 12px;
+            padding: 32px 16px;
+            margin: 24px 0;
+            overflow-x: auto;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin: 24px 0;
+        }
+        .card {
+            background: #12122a;
+            border: 1px solid #1a1a3e;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .card-title {
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        .card p { font-size: 0.9rem; color: #aaa; margin: 0; }
+        .card .tag {
+            display: inline-block;
+            background: #1a1a3e;
+            color: #e94560;
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th {
+            background: #12122a;
+            color: #e94560;
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #1a1a3e;
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+        tr:hover td { background: #0f0f1f; }
+        code {
+            background: #1a1a3e;
+            color: #e94560;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .badge-red { background: #e9456022; color: #e94560; border: 1px solid #e9456044; }
+        .badge-orange { background: #ff6b3522; color: #ff6b35; border: 1px solid #ff6b3544; }
+        .badge-blue { background: #0f346022; color: #5b9bd5; border: 1px solid #0f346044; }
+        .badge-green { background: #2e7d3222; color: #66bb6a; border: 1px solid #2e7d3244; }
+
+        .issue-card {
+            background: #12122a;
+            border-left: 3px solid #ff6b35;
+            border-radius: 0 8px 8px 0;
+            padding: 16px 20px;
+            margin: 12px 0;
+        }
+        .issue-card .title { color: #fff; font-weight: 600; margin-bottom: 6px; }
+        .issue-card p { font-size: 0.9rem; color: #aaa; margin: 0; }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            margin: 24px 0;
+        }
+        .stat {
+            background: #12122a;
+            border: 1px solid #1a1a3e;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        .stat .number { font-size: 2rem; font-weight: 700; color: #e94560; }
+        .stat .label { font-size: 0.85rem; color: #888; margin-top: 4px; }
+
+        .tech-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 16px 0;
+        }
+        .tech-item {
+            background: #1a1a3e;
+            color: #ccc;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        /* ===== NEW: Hero Section ===== */
+        .hero {
+            position: relative;
+            min-height: 85vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 80px 24px 60px;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(
+                circle at 50% 0%,
+                rgba(233, 69, 96, 0.12) 0%,
+                rgba(233, 69, 96, 0.04) 35%,
+                transparent 65%
+            );
+            pointer-events: none;
+        }
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+        }
+        .hero-title {
+            font-size: clamp(2.5rem, 6vw, 3.8rem);
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+        }
+        .hero-title span { color: #e94560; }
+        .hero-tagline {
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+            color: #e94560;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .hero-subtitle {
+            font-size: 1.05rem;
+            color: #aaa;
+            line-height: 1.8;
+            margin-bottom: 32px;
+            max-width: 680px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .hero-badge {
+            display: inline-block;
+            background: #ff6b3518;
+            color: #ff6b35;
+            border: 1px solid #ff6b3544;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 28px;
+            letter-spacing: 0.3px;
+        }
+
+        /* ===== NEW: CTA Buttons ===== */
+        .cta-group {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .btn {
+            padding: 12px 28px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: inherit;
+        }
+        .btn-primary {
+            background: #e94560;
+            color: #fff;
+            border: 2px solid #e94560;
+        }
+        .btn-primary:hover {
+            background: #d63851;
+            border-color: #d63851;
+            box-shadow: 0 8px 24px rgba(233, 69, 96, 0.3);
+        }
+        .btn-secondary {
+            background: transparent;
+            color: #e94560;
+            border: 2px solid #e94560;
+        }
+        .btn-secondary:hover {
+            background: rgba(233, 69, 96, 0.1);
+            box-shadow: 0 4px 16px rgba(233, 69, 96, 0.15);
+        }
+        .btn-ghost {
+            background: transparent;
+            color: #e94560;
+            border: 2px solid transparent;
+            padding: 12px 16px;
+        }
+        .btn-ghost:hover {
+            color: #ff6b82;
+        }
+
+        /* ===== NEW: Pipeline Flow ===== */
+        .pipeline-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin: 32px 0;
+        }
+        .pipeline-step {
+            background: #12122a;
+            border: 1px solid #1a1a3e;
+            border-radius: 8px;
+            padding: 14px 16px;
+            text-align: center;
+            min-width: 100px;
+            transition: border-color 0.2s;
+        }
+        .pipeline-step:hover {
+            border-color: #e9456066;
+        }
+        .pipeline-step .icon {
+            font-size: 1.4rem;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .pipeline-step .name {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 2px;
+        }
+        .pipeline-step .desc {
+            font-size: 0.7rem;
+            color: #888;
+        }
+        .pipeline-arrow {
+            color: #e94560;
+            font-size: 1.3rem;
+            user-select: none;
+            flex-shrink: 0;
+        }
+        .section-link {
+            text-align: center;
+            margin-top: 24px;
+        }
+        .section-link a {
+            color: #e94560;
+            text-decoration: none;
+            font-size: 0.95rem;
+        }
+        .section-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* ===== NEW: Footer ===== */
+        footer {
+            margin-top: 64px;
+            padding: 32px 24px;
+            border-top: 1px solid #1a1a3e;
+            text-align: center;
+        }
+        .footer-author {
+            color: #ccc;
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+        }
+        .footer-links {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        .footer-links a {
+            color: #888;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        .footer-links a:hover { color: #e94560; }
+        .footer-status {
+            color: #555;
+            font-size: 0.8rem;
+        }
+
+        /* ===== NEW: Responsive ===== */
+        @media (max-width: 768px) {
+            .pipeline-flow {
+                flex-direction: column;
+                gap: 4px;
+            }
+            .pipeline-arrow {
+                transform: rotate(90deg);
+            }
+            .pipeline-step {
+                width: 100%;
+                max-width: 260px;
+            }
+        }
+        @media (max-width: 640px) {
+            .cta-group {
+                flex-direction: column;
+                align-items: center;
+            }
+            .stat-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .hero {
+                min-height: 70vh;
+                padding: 60px 20px 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==================== HERO ==================== -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">Advanced POC · Under Development</div>
+            <h1 class="hero-title">Open<span>Devin</span></h1>
+            <p class="hero-tagline">The pipeline that writes production code.</p>
+            <p class="hero-subtitle">
+                An autonomous code pipeline that reads GitHub Issues, classifies tasks by domain,
+                generates production code through 4 cognitive phases, validates inside Docker,
+                and auto-merges — with 87.5% success rate on real projects.
+            </p>
+            <div class="cta-group">
+                <a href="https://github.com/ricardobnjunior" class="btn btn-primary" target="_blank">View on GitHub</a>
+                <a href="#how-it-works" class="btn btn-secondary">See How It Works</a>
+                <a href="architecture.html" class="btn btn-ghost">Architecture Deep Dive &rarr;</a>
+            </div>
+        </div>
+    </section>
+
+    <div class="container">
+
+        <!-- ==================== STATS BAR ==================== -->
+        <div id="stats" class="stat-grid">
+            <div class="stat">
+                <div class="number">5</div>
+                <div class="label">Specialized Agents</div>
+            </div>
+            <div class="stat">
+                <div class="number">4</div>
+                <div class="label">CORE Phases</div>
+            </div>
+            <div class="stat">
+                <div class="number">87.5%</div>
+                <div class="label">Auto-Merge Rate</div>
+            </div>
+            <div class="stat">
+                <div class="number">36min</div>
+                <div class="label">for 8 Issues</div>
+            </div>
+        </div>
+
+        <!-- ==================== HOW IT WORKS ==================== -->
+        <h2 id="how-it-works">How It Works</h2>
+        <p>Every GitHub Issue labeled <code>agent</code> flows through this pipeline — from classification to merged PR.</p>
+
+        <div class="pipeline-flow">
+            <div class="pipeline-step">
+                <span class="icon">📋</span>
+                <div class="name">Issue</div>
+                <div class="desc">Label: agent</div>
+            </div>
+            <span class="pipeline-arrow">&rarr;</span>
+            <div class="pipeline-step">
+                <span class="icon">🔍</span>
+                <div class="name">Triage</div>
+                <div class="desc">Is it processable?</div>
+            </div>
+            <span class="pipeline-arrow">&rarr;</span>
+            <div class="pipeline-step">
+                <span class="icon">🤖</span>
+                <div class="name">Agent</div>
+                <div class="desc">Domain routing</div>
+            </div>
+            <span class="pipeline-arrow">&rarr;</span>
+            <div class="pipeline-step">
+                <span class="icon">🧠</span>
+                <div class="name">CORE</div>
+                <div class="desc">4 cognitive phases</div>
+            </div>
+            <span class="pipeline-arrow">&rarr;</span>
+            <div class="pipeline-step">
+                <span class="icon">🐳</span>
+                <div class="name">QA</div>
+                <div class="desc">Docker validation</div>
+            </div>
+            <span class="pipeline-arrow">&rarr;</span>
+            <div class="pipeline-step">
+                <span class="icon">👁️</span>
+                <div class="name">Review</div>
+                <div class="desc">LLM code review</div>
+            </div>
+            <span class="pipeline-arrow">&rarr;</span>
+            <div class="pipeline-step">
+                <span class="icon">🔄</span>
+                <div class="name">PR + CI</div>
+                <div class="desc">Commit &amp; Actions</div>
+            </div>
+            <span class="pipeline-arrow">&rarr;</span>
+            <div class="pipeline-step">
+                <span class="icon">✅</span>
+                <div class="name">Merge</div>
+                <div class="desc">Auto or human</div>
+            </div>
+        </div>
+
+        <div class="section-link">
+            <a href="architecture.html">Want the full technical breakdown? &rarr; Architecture Deep Dive</a>
+        </div>
+
+        <!-- ==================== SPECIALIZED AGENTS ==================== -->
+        <h2>Specialized Agents</h2>
+        <p>The router classifies each issue via LLM and routes it to the agent with specialized prompts and allowed file paths.</p>
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-title">Backend Agent</div>
+                <p>FastAPI, SQLAlchemy, CRUD endpoints, auth flows</p>
+                <span class="tag">app/ api/ services/ models/</span>
+            </div>
+            <div class="card">
+                <div class="card-title">Frontend Agent</div>
+                <p>React, Next.js, components, hooks, pages</p>
+                <span class="tag">pages/ components/ hooks/ styles/</span>
+            </div>
+            <div class="card">
+                <div class="card-title">AI Systems Agent</div>
+                <p>LLM integrations, prompts, chains, agent architectures</p>
+                <span class="tag">agents/ prompts/ graphs/ schemas/</span>
+            </div>
+            <div class="card">
+                <div class="card-title">Database Agent</div>
+                <p>Models, Alembic migrations, database schemas</p>
+                <span class="tag">models/ alembic/ migrations/ db/</span>
+            </div>
+            <div class="card">
+                <div class="card-title">Mixed Agent</div>
+                <p>Full-stack issues spanning multiple domains — executed sequentially</p>
+                <span class="tag">all paths combined</span>
+            </div>
+        </div>
+
+        <!-- ==================== CORE PHASES ==================== -->
+        <h2>CORE Phases</h2>
+        <p>Every issue passes through 4 mandatory cognitive phases. An AI Judge validates quality between each phase — if rejected, the phase is re-executed (up to 3 retries).</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Phase</th>
+                    <th>What the Agent Does</th>
+                    <th>What the AI Judge Evaluates</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="badge badge-blue">Scan</span></td>
+                    <td>Reads the issue, maps the codebase — files, modules, patterns, dependencies</td>
+                    <td>Enough context? All relevant files identified?</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-blue">Investigate</span></td>
+                    <td>Searches docs, APIs, best practices; analyzes complexity and duplication</td>
+                    <td>Research thorough? Reliable sources? Duplication checked?</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-blue">Draft Plan</span></td>
+                    <td>Defines architecture, lists files to create/modify, builds TODO and test plan</td>
+                    <td>Plan covers all requirements? Architecture coherent?</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-blue">Build</span></td>
+                    <td>Generates production code + automated tests in batches</td>
+                    <td>Code follows plan? All deliverables covered?</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- ==================== QUALITY ASSURANCE ==================== -->
+        <h2>Quality Assurance</h2>
+        <p>All generated code runs through a validation pipeline inside an isolated Docker container before any commit.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Stage</th>
+                    <th>What It Does</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Commit Sanitizer</strong></td>
+                    <td>Fixes invalid imports, smart-merges shared files (router.py, config.py, requirements.txt), protects repo files from overwrite</td>
+                </tr>
+                <tr>
+                    <td><strong>Syntax Check</strong></td>
+                    <td>Parses all Python files (AST) to catch syntax errors</td>
+                </tr>
+                <tr>
+                    <td><strong>Import Check</strong></td>
+                    <td>Verifies all imports resolve to existing modules</td>
+                </tr>
+                <tr>
+                    <td><strong>Load Test</strong></td>
+                    <td>Runs <code>from app.main import app</code> — verifies FastAPI starts</td>
+                </tr>
+                <tr>
+                    <td><strong>Pytest</strong></td>
+                    <td>Executes generated unit tests with coverage</td>
+                </tr>
+                <tr>
+                    <td><strong>SAST</strong></td>
+                    <td>Bandit (vulnerabilities) + Ruff (lint/formatting)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- ==================== REAL EXECUTION RESULTS ==================== -->
+        <h2 id="results">Real Execution: 8 Backend Issues</h2>
+        <p>
+            Full pipeline run processing 8 sequential issues from
+            <code>ricardobnjunior/content-api</code> — from scaffolding to AI endpoints.
+            Total time: <strong>36 min 45s</strong>. Config: <code>SKIP_MODES=investigate</code>, <code>SKIP_TESTS=true</code>.
+        </p>
+
+        <div class="stat-grid">
+            <div class="stat">
+                <div class="number">8</div>
+                <div class="label">Issues Processed</div>
+            </div>
+            <div class="stat">
+                <div class="number">7</div>
+                <div class="label">Auto-Merged</div>
+            </div>
+            <div class="stat">
+                <div class="number">1</div>
+                <div class="label">Escalated (Human Review)</div>
+            </div>
+            <div class="stat">
+                <div class="number">87.5%</div>
+                <div class="label">Success Rate</div>
+            </div>
+        </div>
+
+        <h3>Results per Issue</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Issue</th>
+                    <th>Title</th>
+                    <th>Files</th>
+                    <th>Auto-Fix</th>
+                    <th>Result</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>#1</td>
+                    <td>Backend scaffolding — FastAPI + SQLite</td>
+                    <td>14</td>
+                    <td>0</td>
+                    <td><span class="badge badge-green">Auto-merged</span></td>
+                    <td>2m 59s</td>
+                </tr>
+                <tr>
+                    <td>#2</td>
+                    <td>Articles CRUD — model, schemas, endpoints</td>
+                    <td>11 → 17</td>
+                    <td>5 (converged)</td>
+                    <td><span class="badge badge-green">Auto-merged</span></td>
+                    <td>8m 07s</td>
+                </tr>
+                <tr>
+                    <td>#3</td>
+                    <td>Categories with article relationship</td>
+                    <td>12 → 19</td>
+                    <td>1</td>
+                    <td><span class="badge badge-green">Auto-merged</span></td>
+                    <td>5m 04s</td>
+                </tr>
+                <tr>
+                    <td>#4</td>
+                    <td>Search and pagination with filters</td>
+                    <td>4 → 18</td>
+                    <td>5 (failed)</td>
+                    <td><span class="badge badge-orange">Human Review</span></td>
+                    <td>6m 21s</td>
+                </tr>
+                <tr>
+                    <td>#5</td>
+                    <td>Image upload for articles</td>
+                    <td>19</td>
+                    <td>1</td>
+                    <td><span class="badge badge-green">Auto-merged</span></td>
+                    <td>5m 36s</td>
+                </tr>
+                <tr>
+                    <td>#24</td>
+                    <td>AI category suggestion — LLM classifier</td>
+                    <td>8</td>
+                    <td>0</td>
+                    <td><span class="badge badge-green">Auto-merged</span></td>
+                    <td>3m 40s</td>
+                </tr>
+                <tr>
+                    <td>#26</td>
+                    <td>Statistics and analytics endpoints</td>
+                    <td>3</td>
+                    <td>0</td>
+                    <td><span class="badge badge-green">Auto-merged</span></td>
+                    <td>2m 28s</td>
+                </tr>
+                <tr>
+                    <td>#27</td>
+                    <td>Export articles — CSV and JSON download</td>
+                    <td>2</td>
+                    <td>0</td>
+                    <td><span class="badge badge-green">Auto-merged</span></td>
+                    <td>2m 24s</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Timeline</h3>
+        <p>Each issue was processed sequentially. Auto-fix converged on all except Issue #4, which got stuck in a <code>router.py</code> loop.</p>
+
+        <div class="mermaid-wrapper">
+            <pre class="mermaid">
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#1a1a2e', 'primaryTextColor': '#ffffff', 'lineColor': '#e94560', 'fontSize': '13px'}}}%%
+
+gantt
+    title Pipeline Execution — 8 Issues (36m 45s)
+    dateFormat mm:ss
+    axisFormat %M:%S
+
+    section Issue 1
+    Scaffolding (auto-merged)     :done, i1, 00:00, 2m 59s
+
+    section Issue 2
+    Articles CRUD (5 auto-fix)    :done, i2, after i1, 8m 7s
+
+    section Issue 3
+    Categories (1 auto-fix)       :done, i3, after i2, 5m 4s
+
+    section Issue 4
+    Search (ESCALATED)            :crit, i4, after i3, 6m 21s
+
+    section Issue 5
+    Image Upload (1 auto-fix)     :done, i5, after i4, 5m 36s
+
+    section Issue 24
+    AI Classifier                 :done, i24, after i5, 3m 40s
+
+    section Issue 26
+    Statistics                    :done, i26, after i24, 2m 28s
+
+    section Issue 27
+    Export CSV/JSON               :done, i27, after i26, 2m 24s
+            </pre>
+        </div>
+
+        <h3>Auto-Fix Details</h3>
+        <p>The auto-fix resolved errors progressively on issues that needed correction:</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Issue</th>
+                    <th>Attempt</th>
+                    <th>Error</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td rowspan="5">#2</td>
+                    <td>1/5</td>
+                    <td><code>ModuleNotFoundError: starlette</code></td>
+                    <td><span class="badge badge-red">16 failed</span></td>
+                </tr>
+                <tr>
+                    <td>2/5</td>
+                    <td><code>OperationalError: no such table</code></td>
+                    <td><span class="badge badge-red">16 failed</span></td>
+                </tr>
+                <tr>
+                    <td>3/5</td>
+                    <td><code>OperationalError: no such table</code></td>
+                    <td><span class="badge badge-red">16 failed</span></td>
+                </tr>
+                <tr>
+                    <td>4/5</td>
+                    <td><code>OperationalError: no such table</code></td>
+                    <td><span class="badge badge-red">16 failed</span></td>
+                </tr>
+                <tr>
+                    <td>5/5</td>
+                    <td>Fixed conftest.py + tables</td>
+                    <td><span class="badge badge-green">21 passed</span></td>
+                </tr>
+                <tr>
+                    <td>#3</td>
+                    <td>1/1</td>
+                    <td><code>ModuleNotFoundError: app.database</code></td>
+                    <td><span class="badge badge-green">21 passed</span></td>
+                </tr>
+                <tr>
+                    <td rowspan="2">#4</td>
+                    <td>1-2</td>
+                    <td><code>ModuleNotFoundError: fastapi</code></td>
+                    <td><span class="badge badge-red">Failed</span></td>
+                </tr>
+                <tr>
+                    <td>3-5</td>
+                    <td><code>NameError: articles not defined</code> (router.py loop)</td>
+                    <td><span class="badge badge-orange">Escalated</span></td>
+                </tr>
+                <tr>
+                    <td>#5</td>
+                    <td>1/1</td>
+                    <td><code>RuntimeError: httpx package required</code></td>
+                    <td><span class="badge badge-green">16 passed</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- ==================== TECH STACK ==================== -->
+        <h2>Tech Stack</h2>
+        <div class="tech-list">
+            <span class="tech-item">Python 3.11+</span>
+            <span class="tech-item">LangGraph</span>
+            <span class="tech-item">LangChain Core</span>
+            <span class="tech-item">DeepSeek v3 (Agent)</span>
+            <span class="tech-item">Gemini 2.5 Flash (Judge)</span>
+            <span class="tech-item">Claude Sonnet (Fallback)</span>
+            <span class="tech-item">OpenRouter</span>
+            <span class="tech-item">Docker</span>
+            <span class="tech-item">GitHub Actions</span>
+            <span class="tech-item">FastAPI</span>
+            <span class="tech-item">React + TypeScript</span>
+            <span class="tech-item">ChromaDB</span>
+            <span class="tech-item">Tree-sitter</span>
+            <span class="tech-item">ghapi</span>
+            <span class="tech-item">Bandit</span>
+            <span class="tech-item">Semgrep</span>
+            <span class="tech-item">Ruff</span>
+            <span class="tech-item">Pytest</span>
+            <span class="tech-item">Tavily</span>
+            <span class="tech-item">LangFuse</span>
+        </div>
+
+        <!-- ==================== ARCHITECTURE ==================== -->
+        <h2 id="architecture">Architecture</h2>
+        <p>Full pipeline flow — from issue intake through triage, specialized agents, 4 CORE cognitive phases with AI Judge validation, quality assurance in Docker, code review, delivery, and CI monitoring.</p>
+
+        <div class="mermaid-wrapper">
+            <pre class="mermaid">
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#1a1a2e', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#16213e', 'lineColor': '#e94560', 'secondaryColor': '#0f3460', 'tertiaryColor': '#533483', 'fontSize': '13px'}}}%%
+
+flowchart TB
+
+    ISSUE([" GitHub Issues (label: agent) "]):::input
+
+    subgraph TRIAGE_BLOCK [" TRIAGE "]
+        direction TB
+        TR[" Analyze issue:<br/>processable? "]:::triage
+        ROUTER{" Router "}:::decision
+        TR --> ROUTER
+    end
+    SKIP([" Skip "]):::skip
+
+    subgraph AGENTS [" SPECIALIZED AGENTS "]
+        direction LR
+        AG_BE[" Backend "]:::agent_be
+        AG_FE[" Frontend "]:::agent_fe
+        AG_AI[" AI Systems "]:::agent_ai
+        AG_DB[" Database "]:::agent_db
+        AG_MX[" Mixed "]:::agent_mx
+    end
+
+    subgraph MODE_E [" MODE 1: SCAN "]
+        direction TB
+        E1[" Read the full issue "]:::scan
+        E2[" Map codebase:<br/>files, modules,<br/>dependencies "]:::scan
+        E1 --> E2
+    end
+    EJ{" AI JUDGE "}:::judge
+    EJ_NO[" Redo "]:::judgefail
+
+    subgraph MODE_R [" MODE 2: INVESTIGATE "]
+        direction TB
+        R1[" External research:<br/>docs, APIs "]:::investigate
+        R2[" Analyze codebase:<br/>complexity "]:::investigate
+        R1 --> R2
+    end
+    RJ{" AI JUDGE "}:::judge
+    RJ_NO[" Deepen "]:::judgefail
+
+    subgraph MODE_P [" MODE 3: DRAFT PLAN "]
+        direction TB
+        P1[" Architecture +<br/>TODO list "]:::draft_plan
+        P2[" Test plan "]:::draft_plan
+        P1 --> P2
+    end
+    PJ{" AI JUDGE "}:::judge
+    PJ_NO[" Replan "]:::judgefail
+
+    subgraph MODE_I [" MODE 4: BUILD "]
+        direction TB
+        I1[" Generate production code "]:::build
+        I2[" Generate tests "]:::build
+        I1 --> I2
+    end
+    IJ{" AI JUDGE "}:::judge
+    IJ_NO[" Fix "]:::judgefail
+
+    subgraph QA_BLOCK [" QUALITY ASSURANCE "]
+        direction TB
+        SAN[" Commit Sanitizer "]:::quality
+        VAL[" Docker Validator:<br/>Syntax | Imports | Load Test<br/>Pytest | Bandit | Ruff "]:::quality
+        SAN --> VAL
+    end
+    QR{" Passed? "}:::decision
+    FIX[" Auto-Fix<br/>(up to 5x) "]:::autofix
+
+    REV[" Code Review<br/>(LLM Judge) "]:::review
+    RR{" Approved? "}:::decision
+
+    subgraph DELIVERY [" DELIVERY "]
+        direction TB
+        COMMIT[" Commit + PR "]:::delivery
+        CI[" CI Check<br/>(GitHub Actions) "]:::delivery
+        COMMIT --> CI
+    end
+    CIR{" CI Passed? "}:::decision
+    CIFIX[" CI Repair<br/>(up to 3x) "]:::autofix
+
+    MERGE([" Auto-Merge "]):::output
+    HUMAN([" Human Review "]):::human
+
+    ISSUE --> TRIAGE_BLOCK
+    TR -->|no| SKIP
+    ROUTER -->|backend| AG_BE
+    ROUTER -->|frontend| AG_FE
+    ROUTER -->|ai_systems| AG_AI
+    ROUTER -->|database| AG_DB
+    ROUTER -->|mixed| AG_MX
+
+    AG_BE & AG_FE & AG_AI & AG_DB & AG_MX --> MODE_E
+
+    MODE_E --> EJ
+    EJ -->|Approved| MODE_R
+    EJ -->|Rejected| EJ_NO --> MODE_E
+
+    MODE_R --> RJ
+    RJ -->|Approved| MODE_P
+    RJ -->|Rejected| RJ_NO --> MODE_R
+
+    MODE_P --> PJ
+    PJ -->|Approved| MODE_I
+    PJ -->|Rejected| PJ_NO --> MODE_P
+
+    MODE_I --> IJ
+    IJ -->|Approved| QA_BLOCK
+    IJ -->|Rejected| IJ_NO --> MODE_I
+
+    VAL --> QR
+    QR -->|yes| REV
+    QR -->|no| FIX
+    FIX -->|retry| SAN
+    FIX -->|exhausted| HUMAN
+
+    REV --> RR
+    RR -->|PASS| DELIVERY
+    RR -->|FAIL| FIX
+
+    CI --> CIR
+    CIR -->|passed| MERGE
+    CIR -->|failed| CIFIX
+    CIFIX -->|retry| CI
+    CIFIX -->|exhausted| HUMAN
+
+    classDef input fill:#e94560,stroke:#e94560,color:#fff,font-weight:bold
+    classDef skip fill:#333,stroke:#555,color:#888
+    classDef triage fill:#16213e,stroke:#16213e,color:#fff
+    classDef scan fill:#0f3460,stroke:#0f3460,color:#fff
+    classDef investigate fill:#16213e,stroke:#16213e,color:#fff
+    classDef draft_plan fill:#533483,stroke:#533483,color:#fff
+    classDef build fill:#1a1a2e,stroke:#e94560,color:#fff,stroke-width:2px
+    classDef quality fill:#0f3460,stroke:#e94560,color:#fff,stroke-width:2px
+    classDef review fill:#533483,stroke:#e94560,color:#fff,stroke-width:2px
+    classDef delivery fill:#16213e,stroke:#e94560,color:#fff,stroke-width:2px
+    classDef autofix fill:#1a1a2e,stroke:#ff6b35,color:#ff6b35,stroke-width:2px
+    classDef output fill:#e94560,stroke:#e94560,color:#fff,font-weight:bold
+    classDef human fill:#ff6b35,stroke:#ff6b35,color:#fff,font-weight:bold
+    classDef decision fill:#16213e,stroke:#e94560,color:#fff,font-weight:bold
+    classDef judge fill:#ff6b35,stroke:#ff6b35,color:#fff,font-weight:bold
+    classDef judgefail fill:#1a1a2e,stroke:#ff6b35,color:#ff6b35,stroke-width:2px
+    classDef agent_be fill:#0f3460,stroke:#e94560,color:#fff,stroke-width:2px
+    classDef agent_fe fill:#533483,stroke:#e94560,color:#fff,stroke-width:2px
+    classDef agent_ai fill:#16213e,stroke:#e94560,color:#fff,stroke-width:2px
+    classDef agent_db fill:#0b1d3a,stroke:#e94560,color:#fff,stroke-width:2px
+    classDef agent_mx fill:#1a1a2e,stroke:#e94560,color:#fff,stroke-width:2px
+
+    style TRIAGE_BLOCK fill:#0b1621,stroke:#16213e,color:#fff,stroke-width:2px
+    style AGENTS fill:#12121e,stroke:#e94560,color:#fff,stroke-width:2px
+    style MODE_E fill:#0b1d3a,stroke:#0f3460,color:#fff,stroke-width:2px
+    style MODE_R fill:#0b1621,stroke:#16213e,color:#fff,stroke-width:2px
+    style MODE_P fill:#2d1a4e,stroke:#533483,color:#fff,stroke-width:2px
+    style MODE_I fill:#12121e,stroke:#e94560,color:#fff,stroke-width:2px
+    style QA_BLOCK fill:#0b1621,stroke:#e94560,color:#fff,stroke-width:2px
+    style DELIVERY fill:#0b1621,stroke:#16213e,color:#fff,stroke-width:2px
+            </pre>
+        </div>
+
+        <!-- ==================== KNOWN LIMITATIONS ==================== -->
+        <h2>Known Limitations &amp; Roadmap</h2>
+        <p>This is an advanced POC. These are the known limitations being actively worked on.</p>
+
+        <div class="issue-card">
+            <div class="title">Test file truncation <span class="badge badge-red">High</span></div>
+            <p>The LLM has an output token limit. Long test files (8+ tests) get cut mid-generation, causing syntax errors. Mitigation: prompt instructs max 5 tests per file, but the LLM may ignore this.</p>
+        </div>
+
+        <div class="issue-card">
+            <div class="title">Tests with wrong repo imports <span class="badge badge-red">High</span></div>
+            <p>The LLM generates tests that import repo modules with incorrect paths (e.g., <code>from app.database import get_db</code> when the real path is different). Auto-fix now receives dynamic context from repo files, but initial generation still depends on the LLM getting it right.</p>
+        </div>
+
+        <div class="issue-card">
+            <div class="title">Auto-fix recreates repo files <span class="badge badge-orange">Medium</span></div>
+            <p>When tests fail, auto-fix may recreate existing repo files (main.py, router.py, database.py) with incomplete versions, causing error loops. The sanitizer protects shared files, but auto-fix sometimes generates versions that conflict with the merge.</p>
+        </div>
+
+        <div class="issue-card">
+            <div class="title">Shared files loop in auto-fix <span class="badge badge-orange">Medium</span></div>
+            <p>The <code>router.py</code> is a shared file protected by the sanitizer. Auto-fix generates a version with correct imports, but the sanitizer merges it with the repo version producing broken code (e.g., <code>articles.router</code> without importing <code>articles</code>). Result: 5-attempt loop without converging.</p>
+        </div>
+
+        <div class="issue-card">
+            <div class="title">Tests generated inside build <span class="badge badge-blue">Low</span></div>
+            <p><code>SKIP_TESTS=true</code> skips the separate test generation call, but the build LLM may include test files in its output. These tests aren't filtered and can cause QA failures.</p>
+        </div>
+
+        <div class="issue-card">
+            <div class="title">Code Review criticals don't become failures <span class="badge badge-blue">Low</span></div>
+            <p>When the Code Review LLM reports "critical" severity issues, they aren't converted into failures for auto-fix. Result: the repair node receives an empty <code>failure_log</code> and fixes nothing, entering a loop.</p>
+        </div>
+
+        <!-- ==================== FOOTER ==================== -->
+        <footer>
+            <div class="footer-author">Built by Ricardo Neves Jr.</div>
+            <div class="footer-links">
+                <a href="https://github.com/ricardobnjunior" target="_blank">GitHub</a>
+                <a href="https://www.linkedin.com/in/ricardo-neves-junior/" target="_blank">LinkedIn</a>
+            </div>
+            <div class="footer-status">Advanced POC · Not production ready · Open for collaboration</div>
+        </footer>
+
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#1a1a2e',
+                primaryTextColor: '#ffffff',
+                primaryBorderColor: '#16213e',
+                lineColor: '#e94560',
+                secondaryColor: '#0f3460',
+                tertiaryColor: '#533483',
+                fontSize: '13px'
+            }
+        });
+    </script>
+</body>
+</html>

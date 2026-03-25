@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenDevin — Architecture Deep Dive</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0a0a1a;
+            color: #e0e0e0;
+            line-height: 1.7;
+        }
+        .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+
+        h1 {
+            font-size: 2.2rem;
+            color: #e94560;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        .subtitle {
+            color: #888;
+            font-size: 1.1rem;
+            margin-bottom: 48px;
+        }
+        h2 {
+            font-size: 1.5rem;
+            color: #fff;
+            margin-top: 56px;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e94560;
+        }
+        h3 {
+            font-size: 1.15rem;
+            color: #e94560;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+        p { margin-bottom: 16px; color: #ccc; }
+
+        .mermaid-wrapper {
+            background: #0f0f1f;
+            border: 1px solid #1a1a3e;
+            border-radius: 12px;
+            padding: 32px 16px;
+            margin: 24px 0;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th {
+            background: #12122a;
+            color: #e94560;
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #1a1a3e;
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+        tr:hover td { background: #0f0f1f; }
+        code {
+            background: #1a1a3e;
+            color: #e94560;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .badge-red { background: #e9456022; color: #e94560; border: 1px solid #e9456044; }
+        .badge-orange { background: #ff6b3522; color: #ff6b35; border: 1px solid #ff6b3544; }
+        .badge-blue { background: #0f346022; color: #5b9bd5; border: 1px solid #0f346044; }
+        .badge-green { background: #2e7d3222; color: #66bb6a; border: 1px solid #2e7d3244; }
+
+        .issue-card {
+            background: #12122a;
+            border-left: 3px solid #ff6b35;
+            border-radius: 0 8px 8px 0;
+            padding: 16px 20px;
+            margin: 12px 0;
+        }
+        .issue-card .title { color: #fff; font-weight: 600; margin-bottom: 6px; }
+        .issue-card p { font-size: 0.9rem; color: #aaa; margin: 0; }
+
+        /* ===== Nav Header ===== */
+        .nav-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #0a0a1a;
+            border-bottom: 1px solid #1a1a3e;
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav-logo {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+            text-decoration: none;
+        }
+        .nav-logo span { color: #e94560; }
+        .nav-back {
+            color: #888;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        .nav-back:hover { color: #e94560; }
+
+        /* ===== Footer ===== */
+        footer {
+            margin-top: 64px;
+            padding: 32px 24px;
+            border-top: 1px solid #1a1a3e;
+            text-align: center;
+        }
+        .footer-author {
+            color: #ccc;
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+        }
+        .footer-links {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        .footer-links a {
+            color: #888;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        .footer-links a:hover { color: #e94560; }
+        .footer-status {
+            color: #555;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==================== NAV HEADER ==================== -->
+    <nav class="nav-header">
+        <a href="index.html" class="nav-logo">Open<span>Devin</span></a>
+        <a href="index.html" class="nav-back">&larr; Back to Overview</a>
+    </nav>
+
+    <div class="container">
+
+        <h1>Architecture Deep Dive</h1>
+        <p class="subtitle">How the autonomous pipeline works internally — agents, phases, validation and delivery.</p>
+
+        <!-- ==================== MAIN FLOWCHART ==================== -->
+        <h2>Pipeline Flow</h2>
+        <p>Full pipeline — from issue intake through triage, specialized agents, 4 CORE cognitive phases with AI Judge validation, quality assurance in Docker, code review, delivery, and CI monitoring.</p>
+
+        <div class="mermaid-wrapper">
+            <pre class="mermaid">
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#1a1a2e', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#16213e', 'lineColor': '#e94560', 'secondaryColor': '#0f3460', 'tertiaryColor': '#533483', 'fontSize': '13px'}}}%%
+
+flowchart TB
+
+    ISSUE([" GitHub Issues (label: agent) "]):::input
+
+    subgraph TRIAGE_BLOCK [" TRIAGE "]
+        direction TB
+        TR[" Analyze issue:<br/>processable? "]:::triage
+        ROUTER{" Router "}:::decision
+        TR --> ROUTER
+    end
+    SKIP([" Skip "]):::skip
+
+    subgraph AGENTS [" SPECIALIZED AGENTS "]
+        direction LR
+        AG_BE[" Backend "]:::agent_be
+        AG_FE[" Frontend "]:::agent_fe
+        AG_AI[" AI Systems "]:::agent_ai
+        AG_DB[" Database "]:::agent_db
+        AG_MX[" Mixed "]:::agent_mx
+    end
+
+    subgraph MODE_E [" MODE 1: SCAN "]
+        direction TB
+        E1[" Read the full issue "]:::scan
+        E2[" Map codebase:<br/>files, modules,<br/>dependencies "]:::scan
+        E1 --> E2
+    end
+    EJ{" AI JUDGE "}:::judge
+    EJ_NO[" Redo "]:::judgefail
+
+    subgraph MODE_R [" MODE 2: INVESTIGATE "]
+        direction TB
+        R1[" External research:<br/>docs, APIs "]:::investigate
+        R2[" Analyze codebase:<br/>complexity "]:::investigate
+        R1 --> R2
+    end
+    RJ{" AI JUDGE "}:::judge
+    RJ_NO[" Deepen "]:::judgefail
+
+    subgraph MODE_P [" MODE 3: DRAFT PLAN "]
+        direction TB
+        P1[" Architecture +<br/>TODO list "]:::draft_plan
+        P2[" Test plan "]:::draft_plan
+        P1 --> P2
+    end
+    PJ{" AI JUDGE "}:::judge
+    PJ_NO[" Replan "]:::judgefail
+
+    subgraph MODE_I [" MODE 4: BUILD "]
+        direction TB
+        I1[" Generate production code "]:::build
+        I2[" Generate tests "]:::build
+        I1 --> I2
+    end
+    IJ{" AI JUDGE "}:::judge
+    IJ_NO[" Fix "]:::judgefail
+
+    subgraph QA_BLOCK [" QUALITY ASSURANCE "]
+        direction TB
+        SAN[" Commit Sanitizer "]:::quality
+        VAL[" Docker Validator:<br/>Syntax | Imports | Load Test<br/>Pytest | Bandit | Ruff "]:::quality
+        SAN --> VAL
+    end
+    QR{" Passed? "}:::decision
+    FIX[" Auto-Fix<br/>(up to 5x) "]:::autofix
+
+    REV[" Code Review<br/>(LLM Judge) "]:::review
+    RR{" Approved? "}:::decision
+
+    subgraph DELIVERY [" DELIVERY "]
+        direction TB
+        COMMIT[" Commit + PR "]:::delivery
+        CI[" CI Check<br/>(GitHub Actions) "]:::delivery
+        COMMIT --> CI
+    end
+    CIR{" CI Passed? "}:::decision
+    CIFIX[" CI Repair<br/>(up to 3x) "]:::autofix
+
+    MERGE([" Auto-Merge "]):::output
+    HUMAN([" Human Review "]):::human
+
+    ISSUE --> TRIAGE_BLOCK
+    TR -->|no| SKIP
+    ROUTER -->|backend| AG_BE
+    ROUTER -->|frontend| AG_FE
+    ROUTER -->|ai_systems| AG_AI
+    ROUTER -->|database| AG_DB
+    ROUTER -->|mixed| AG_MX
+
+    AG_BE & AG_FE & AG_AI & AG_DB & AG_MX --> MODE_E
+
+    MODE_E --> EJ
+    EJ -->|Approved| MODE_R
+    EJ -->|Rejected| EJ_NO --> MODE_E
+
+    MODE_R --> RJ
+    RJ -->|Approved| MODE_P
+    RJ -->|Rejected| RJ_NO --> MODE_R
+
+    MODE_P --> PJ
+    PJ -->|Approved| MODE_I
+    PJ -->|Rejected| PJ_NO --> MODE_P
+
+    MODE_I --> IJ
+    IJ -->|Approved| QA_BLOCK
+    IJ -->|Rejected| IJ_NO --> MODE_I
+
+    VAL --> QR
+    QR -->|yes| REV
+    QR -->|no| FIX
+    FIX -->|retry| SAN
+    FIX -->|exhausted| HUMAN
+
+    REV --> RR
+    RR -->|PASS| DELIVERY
+    RR -->|FAIL| FIX
+
+    CI --> CIR
+    CIR -->|passed| MERGE
+    CIR -->|failed| CIFIX
+    CIFIX -->|retry| CI
+    CIFIX -->|exhausted| HUMAN
+
+    classDef input fill:#e94560,stroke:#e94560,color:#fff,font-weight:bold
+    classDef skip fill:#333,stroke:#555,color:#888
+    classDef triage fill:#16213e,stroke:#16213e,color:#fff
+    classDef scan fill:#0f3460,stroke:#0f3460,color:#fff
+    classDef investigate fill:#16213e,stroke:#16213e,color:#fff
+    classDef draft_plan fill:#533483,stroke:#533483,color:#fff
+    classDef build fill:#1a1a2e,stroke:#e94560,color:#fff,stroke-width:2px
+    classDef quality fill:#0f3460,stroke:#e94560,color:#fff,stroke-width:2px
+    classDef review fill:#533483,stroke:#e94560,color:#fff,stroke-width:2px
+    classDef delivery fill:#16213e,stroke:#e94560,color:#fff,stroke-width:2px
+    classDef autofix fill:#1a1a2e,stroke:#ff6b35,color:#ff6b35,stroke-width:2px
+    classDef output fill:#e94560,stroke:#e94560,color:#fff,font-weight:bold
+    classDef human fill:#ff6b35,stroke:#ff6b35,color:#fff,font-weight:bold
+    classDef decision fill:#16213e,stroke:#e94560,color:#fff,font-weight:bold
+    classDef judge fill:#ff6b35,stroke:#ff6b35,color:#fff,font-weight:bold
+    classDef judgefail fill:#1a1a2e,stroke:#ff6b35,color:#ff6b35,stroke-width:2px
+    classDef agent_be fill:#0f3460,stroke:#e94560,color:#fff,stroke-width:2px
+    classDef agent_fe fill:#533483,stroke:#e94560,color:#fff,stroke-width:2px
+    classDef agent_ai fill:#16213e,stroke:#e94560,color:#fff,stroke-width:2px
+    classDef agent_db fill:#0b1d3a,stroke:#e94560,color:#fff,stroke-width:2px
+    classDef agent_mx fill:#1a1a2e,stroke:#e94560,color:#fff,stroke-width:2px
+
+    style TRIAGE_BLOCK fill:#0b1621,stroke:#16213e,color:#fff,stroke-width:2px
+    style AGENTS fill:#12121e,stroke:#e94560,color:#fff,stroke-width:2px
+    style MODE_E fill:#0b1d3a,stroke:#0f3460,color:#fff,stroke-width:2px
+    style MODE_R fill:#0b1621,stroke:#16213e,color:#fff,stroke-width:2px
+    style MODE_P fill:#2d1a4e,stroke:#533483,color:#fff,stroke-width:2px
+    style MODE_I fill:#12121e,stroke:#e94560,color:#fff,stroke-width:2px
+    style QA_BLOCK fill:#0b1621,stroke:#e94560,color:#fff,stroke-width:2px
+    style DELIVERY fill:#0b1621,stroke:#16213e,color:#fff,stroke-width:2px
+            </pre>
+        </div>
+
+        <!-- ==================== CORE PHASES ==================== -->
+        <h2>CORE Phases</h2>
+        <p>Every issue passes through 4 mandatory cognitive phases. An AI Judge validates quality between each phase — if rejected, the phase is re-executed (up to 3 retries).</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Phase</th>
+                    <th>What the Agent Does</th>
+                    <th>What the AI Judge Evaluates</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="badge badge-blue">Scan</span></td>
+                    <td>Reads the issue, maps the codebase — files, modules, patterns, dependencies</td>
+                    <td>Enough context? All relevant files identified?</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-blue">Investigate</span></td>
+                    <td>Searches docs, APIs, best practices; analyzes complexity and duplication</td>
+                    <td>Research thorough? Reliable sources? Duplication checked?</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-blue">Draft Plan</span></td>
+                    <td>Defines architecture, lists files to create/modify, builds TODO and test plan</td>
+                    <td>Plan covers all requirements? Architecture coherent?</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-blue">Build</span></td>
+                    <td>Generates production code + automated tests in batches</td>
+                    <td>Code follows plan? All deliverables covered?</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- ==================== QUALITY ASSURANCE ==================== -->
+        <h2>Quality Assurance</h2>
+        <p>All generated code runs through a validation pipeline inside an isolated Docker container before any commit.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Stage</th>
+                    <th>What It Does</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Commit Sanitizer</strong></td>
+                    <td>Fixes invalid imports, smart-merges shared files (router.py, config.py, requirements.txt), protects repo files from overwrite</td>
+                </tr>
+                <tr>
+                    <td><strong>Syntax Check</strong></td>
+                    <td>Parses all Python files (AST) to catch syntax errors</td>
+                </tr>
+                <tr>
+                    <td><strong>Import Check</strong></td>
+                    <td>Verifies all imports resolve to existing modules</td>
+                </tr>
+                <tr>
+                    <td><strong>Load Test</strong></td>
+                    <td>Runs <code>from app.main import app</code> — verifies FastAPI starts</td>
+                </tr>
+                <tr>
+                    <td><strong>Pytest</strong></td>
+                    <td>Executes generated unit tests with coverage</td>
+                </tr>
+                <tr>
+                    <td><strong>SAST</strong></td>
+                    <td>Bandit (vulnerabilities) + Ruff (lint/formatting)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- ==================== AUTO-FIX DETAILS ==================== -->
+        <h2>Auto-Fix Details</h2>
+        <p>The auto-fix resolved errors progressively on issues that needed correction. Data from a real execution of 8 backend issues:</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Issue</th>
+                    <th>Attempt</th>
+                    <th>Error</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td rowspan="5">#2</td>
+                    <td>1/5</td>
+                    <td><code>ModuleNotFoundError: starlette</code></td>
+                    <td><span class="badge badge-red">16 failed</span></td>
+                </tr>
+                <tr>
+                    <td>2/5</td>
+                    <td><code>OperationalError: no such table</code></td>
+                    <td><span class="badge badge-red">16 failed</span></td>
+                </tr>
+                <tr>
+                    <td>3/5</td>
+                    <td><code>OperationalError: no such table</code></td>
+                    <td><span class="badge badge-red">16 failed</span></td>
+                </tr>
+                <tr>
+                    <td>4/5</td>
+                    <td><code>OperationalError: no such table</code></td>
+                    <td><span class="badge badge-red">16 failed</span></td>
+                </tr>
+                <tr>
+                    <td>5/5</td>
+                    <td>Fixed conftest.py + tables</td>
+                    <td><span class="badge badge-green">21 passed</span></td>
+                </tr>
+                <tr>
+                    <td>#3</td>
+                    <td>1/1</td>
+                    <td><code>ModuleNotFoundError: app.database</code></td>
+                    <td><span class="badge badge-green">21 passed</span></td>
+                </tr>
+                <tr>
+                    <td rowspan="2">#4</td>
+                    <td>1-2</td>
+                    <td><code>ModuleNotFoundError: fastapi</code></td>
+                    <td><span class="badge badge-red">Failed</span></td>
+                </tr>
+                <tr>
+                    <td>3-5</td>
+                    <td><code>NameError: articles not defined</code> (router.py loop)</td>
+                    <td><span class="badge badge-orange">Escalated</span></td>
+                </tr>
+                <tr>
+                    <td>#5</td>
+                    <td>1/1</td>
+                    <td><code>RuntimeError: httpx package required</code></td>
+                    <td><span class="badge badge-green">16 passed</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- ==================== KNOWN LIMITATIONS ==================== -->
+        <h2>Known Limitations &amp; Roadmap</h2>
+        <p>This is an advanced POC. These are the known limitations being actively worked on.</p>
+
+        <div class="issue-card">
+            <div class="title">Test file truncation <span class="badge badge-red">High</span></div>
+            <p>The LLM has an output token limit. Long test files (8+ tests) get cut mid-generation, causing syntax errors. Mitigation: prompt instructs max 5 tests per file, but the LLM may ignore this.</p>
+        </div>
+
+        <div class="issue-card">
+            <div class="title">Tests with wrong repo imports <span class="badge badge-red">High</span></div>
+            <p>The LLM generates tests that import repo modules with incorrect paths (e.g., <code>from app.database import get_db</code> when the real path is different). Auto-fix now receives dynamic context from repo files, but initial generation still depends on the LLM getting it right.</p>
+        </div>
+
+        <div class="issue-card">
+            <div class="title">Auto-fix recreates repo files <span class="badge badge-orange">Medium</span></div>
+            <p>When tests fail, auto-fix may recreate existing repo files (main.py, router.py, database.py) with incomplete versions, causing error loops. The sanitizer protects shared files, but auto-fix sometimes generates versions that conflict with the merge.</p>
+        </div>
+
+        <div class="issue-card">
+            <div class="title">Shared files loop in auto-fix <span class="badge badge-orange">Medium</span></div>
+            <p>The <code>router.py</code> is a shared file protected by the sanitizer. Auto-fix generates a version with correct imports, but the sanitizer merges it with the repo version producing broken code (e.g., <code>articles.router</code> without importing <code>articles</code>). Result: 5-attempt loop without converging.</p>
+        </div>
+
+        <div class="issue-card">
+            <div class="title">Tests generated inside build <span class="badge badge-blue">Low</span></div>
+            <p><code>SKIP_TESTS=true</code> skips the separate test generation call, but the build LLM may include test files in its output. These tests aren't filtered and can cause QA failures.</p>
+        </div>
+
+        <div class="issue-card">
+            <div class="title">Code Review criticals don't become failures <span class="badge badge-blue">Low</span></div>
+            <p>When the Code Review LLM reports "critical" severity issues, they aren't converted into failures for auto-fix. Result: the repair node receives an empty <code>failure_log</code> and fixes nothing, entering a loop.</p>
+        </div>
+
+        <!-- ==================== FOOTER ==================== -->
+        <footer>
+            <div class="footer-author">Built by Ricardo Neves Jr.</div>
+            <div class="footer-links">
+                <a href="https://github.com/ricardobnjunior" target="_blank">GitHub</a>
+                <a href="https://www.linkedin.com/in/ricardo-neves-junior/" target="_blank">LinkedIn</a>
+            </div>
+            <div class="footer-status">Advanced POC · Not production ready · Open for collaboration</div>
+        </footer>
+
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#1a1a2e',
+                primaryTextColor: '#ffffff',
+                primaryBorderColor: '#16213e',
+                lineColor: '#e94560',
+                secondaryColor: '#0f3460',
+                tertiaryColor: '#533483',
+                fontSize: '13px'
+            }
+        });
+    </script>
+</body>
+</html>
